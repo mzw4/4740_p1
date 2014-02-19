@@ -4,6 +4,7 @@ import java.util.Hashtable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.regex.*;
+import java.util.Enumeration;
 
 public class Parser {
 	
@@ -37,16 +38,16 @@ public class Parser {
 		System.out.println("If this is a Bible corpus, please enter 'b'. If this is a hotel review corpus, please enter 'h'.");
 		
 		while(!goodInput) {
-			String input = inScanner.next();
+			String input = inScanner.nextLine();
 			
 			//Process a Bible corpus.
-			if (input == "b") {
+			if (input.equals("b")) {
 				parser.bibleProcess();
 				goodInput = true;
 			}
 			
 			//Process a hotel review corpus.
-			else if (input == "h") {
+			else if (input.equals("h")) {
 				parser.hotelProcess();
 				goodInput = true;
 			}
@@ -57,21 +58,23 @@ public class Parser {
 		}
 		System.out.println("Corpus processed!");
 		
+		parser.bigramDump();
+		
 		System.out.println("To see a random sentence generated based on the unigrams of the given corpus, enter 'u'.");
 		System.out.println("To see a random sentence generated based on the bigrams of the given corpus, enter 'b'.");
 		System.out.println("To exit, enter 'x'.");
 		while(true) {
 			String input = inScanner.next();
 			
-			if (input == "u") {
+			if (input.equals("u")) {
 				System.out.println(parser.randomUnigramSentence());
 			}
 			
-			else if(input == "b") {
+			else if(input.equals("b")) {
 				System.out.println(parser.randomBigramSentence());
 			}
 			
-			else if(input == "x") {
+			else if(input.equals("x")) {
 				System.out.println("Have a good day!");
 				break;
 			}
@@ -100,7 +103,10 @@ public class Parser {
 			
 			//Strip out all of the <> tags before processing.
 			processSentenceUnigrams(nextSentence.replaceAll("<.*>", ""));
+			processSentenceBigrams(nextSentence.replaceAll("<.*>", ""));
 		}
+		
+		bibleProcessor.close();
 	}
 	
 	public void hotelProcess() {
@@ -118,10 +124,11 @@ public class Parser {
 		}
 		
 		//TODO: Put spaces around punctuation, so that you can split on spaces.
+		String processed = s.replaceAll("([,!.?;:])", " \1 ");
 		
 		//For a moment, presume that this has already been done.
 		//Split the string on whitespace.
-		String[] tokens = s.split("\\s+");
+		String[] tokens = processed.split("\\s+");
 		//Increment the value for each token in the hashtable.
 		for(int a = 0; a < tokens.length; a++) {
 			Token newToken = new Token(tokens[a], TokenType.WORD);
@@ -142,7 +149,33 @@ public class Parser {
 	}
 	
 	public void processSentenceBigrams(String s) {
+		String processed = s.replaceAll("([,!.?;:])", " \1 ");
+		String[] tokens = processed.split("\\s+");
+		Token prev = new Token(null, TokenType.START);
 		
+		for(int a = 0; a < tokens.length; a++) {
+			Token newToken = new Token(tokens[a], TokenType.WORD);
+			Bigram newBigram = new Bigram(prev, newToken);
+			if (bigrams.get(newBigram) == null) bigrams.put(newBigram, 1);
+			else bigrams.put(newBigram, bigrams.get(newBigram) + 1);
+			
+			prev = newToken;
+		}
+		
+		Bigram endBigram;
+		
+		if (tokens.length == 0) { 
+			endBigram = new Bigram(new Token(null, TokenType.START),
+				                   new Token(null, TokenType.END));
+		}
+		else { 
+			endBigram = new Bigram(new Token(tokens[tokens.length - 1], TokenType.WORD),
+				                   new Token(null, TokenType.END));
+		}
+		if (bigrams.get(endBigram) == null) bigrams.put(endBigram, 1);
+		else bigrams.put(endBigram, bigrams.get(endBigram) + 1);
+		
+		//Now we're done.
 	}
 	
 	public String randomUnigramSentence() {
@@ -153,5 +186,26 @@ public class Parser {
 	public String randomBigramSentence() {
 		//TODO: implement
 		return null;
+	}
+	
+	public void unigramDump() {
+		Enumeration<Token> keys = unigrams.keys();
+		System.out.println("Inside unigramDump");
+		System.out.println("Size of unigram hashtable is " + unigrams.size());
+		while(keys.hasMoreElements()) {
+			Token nextVal = keys.nextElement();
+			System.out.println(nextVal.printVal() + ", " + 
+		                       unigrams.get(nextVal));
+		}
+	}
+	
+	public void bigramDump() {
+		Enumeration<Bigram> keys = bigrams.keys();
+		System.out.println("Inside bigramDump");
+		System.out.println("Size of bigram hashtable is " + bigrams.size());
+		while(keys.hasMoreElements()) {
+			Bigram nextVal = keys.nextElement();
+			System.out.println(nextVal.printVal() + ", " + bigrams.get(nextVal));
+		}
 	}
 }

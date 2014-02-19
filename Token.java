@@ -43,4 +43,10 @@ public class Token {
 			return false;
 		return true;
 	}
+	
+	public String printVal() {
+		if (type == TokenType.START) return "START";
+		else if (type == TokenType.END) return "END";
+		else return val;
+	}
 }

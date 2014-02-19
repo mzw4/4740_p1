@@ -47,4 +47,8 @@ public class Bigram {
 			return false;
 		return true;
 	}
+	
+	public String printVal() {
+		return "[" + first.printVal() + "; " + second.printVal() + "]";
+	}
 }
