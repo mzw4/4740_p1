@@ -5,79 +5,54 @@ import java.util.HashMap;
 public class Generator {
 	
 	/*
-	 * Generates a random sentence of specified length based on a bigram language model.
-	 * Intermediate punctuation is selected according to the model just as any other token.
+	 * Generates a random sentence based on a bigram language model.
 	 */
-	public static String randomBigramSentence(HashMap<Token, Integer> unigram_model,
-			HashMap<Bigram, Integer> bigram_model, int length) {
-		ArrayList<Token> sentence_arr = new ArrayList<>();
-		int cur_length = 0;
+	public static String randomBigramSentence(HashMap<Bigram, Integer> bigram_model) {
 		
-		while(cur_length < length) {
-			Token toAdd = null;
-			// Pick the first word. If there is no possible word, stop.
-			if(cur_length == 0) {
-				toAdd = selectWithProbability(unigram_model);
-			} else {
-				// Construct map of bigrams matching the previous word
-				Token prev_word = sentence_arr.get(sentence_arr.size() - 1);
-				HashMap<Bigram, Integer> possible_bigrams = new HashMap<>();
-				for(Bigram b: bigram_model.keySet()) {
-					if(b.getFirst().equals(prev_word)) {
+		ArrayList<Bigram> sentence_arr = new ArrayList<>();
+		Token prev_word = null;
+		
+		while(prev_word == null || prev_word.getType() != TokenType.END) {
+			// Construct map of bigrams matching the previous word
+			HashMap<Bigram, Integer> possible_bigrams = new HashMap<>();
+			for(Bigram b: bigram_model.keySet()) {
+				if(prev_word == null) {
+					if(b.getFirst().getType() == TokenType.START) {
 						possible_bigrams.put(b, bigram_model.get(b));
 					}
+				} else if(b.getFirst().equals(prev_word)){
+					possible_bigrams.put(b, bigram_model.get(b));
 				}
-				
-				// Select the next word according to bigram probabilities
-				Bigram next = selectBigramWithProbability(possible_bigrams);
-				if(next == null) {
-					break;
-				}
-				toAdd = next.getSecond();
 			}
 			
-			if(toAdd != null) {
-				sentence_arr.add(toAdd);
-			} else {
+			// Select the next word according to bigram probabilities
+			Bigram next = selectBigramWithProbability(possible_bigrams);
+			if(next == null) {
 				break;
 			}
-			cur_length++;
+			sentence_arr.add(next);
+			prev_word = sentence_arr.get(sentence_arr.size() - 1).getSecond();
 		}
 		
 		String sentence = "";
-		for(Token t: sentence_arr) {
-			sentence += t.getWord() + " ";
-		}
-		return sentence + ".";
-	}
-	
-	/* 
-	 * Selects a key with probability according to its corresponding value 
-	 * with round robin probability selection
-	 */
-	private static Token selectWithProbability(HashMap<Token, Integer> model) {
-		int sum = 0;
-		for(Integer count: model.values()) {
-			sum += count;
-		}
-		
-		int rand = (int) (Math.random() * sum);
-		int cur = 0;
-		for(Token t: model.keySet()) {
-			cur += model.get(t);
-			if(cur > rand) {
-				return t;
+		for(Bigram b: sentence_arr) {
+			if(b.getSecond().getType() != TokenType.END && b.getFirst().getType() != TokenType.START) {
+				sentence += " ";
 			}
+			if(b.getFirst().getType() == TokenType.WORD) {
+				sentence += b.getFirst().getWord();
+			} 
+
 		}
-		return null;
+		return sentence.substring(1);
 	}
 	
 	/* 
-	 * Selects a key with probability according to its corresponding value 
-	 * with round robin probability selection
+	 * Selects a Bigram with probability according to its corresponding value 
+	 * with roulette style selection
 	 * 
-	 * The number of occurrences of the previous word should be the same as the 
-	 * sum of all values in the map of possible bigrams
+	 * The number of occurrences of the preceding word should be the same as the 
+	 * sum of all values in the model received
 	 */
 	private static Bigram selectBigramWithProbability(HashMap<Bigram, Integer> model) {
 		int sum = 0;
@@ -98,10 +73,11 @@ public class Generator {
 	
 	public static void main(String[] args) {
 		// Test models
-		// "The grey fox likes cats", "The grey fox hates dogs", "The red fox likes Pokemon"
-		// "The grey deer likes cookies", "The grey fox likes DeadMau5", "The red deer hates Muppets"
+		// "The grey fox likes cats.", "The grey fox hates dogs.", "The red fox likes Pokemon."
+		// "The grey deer likes cookies.", "The grey fox likes DeadMau5.", "The red deer hates Muppets."
 		
 		HashMap<Token, Integer> unigram_model = new HashMap<>();
+		
 		unigram_model.put(new Token("The", TokenType.WORD), 6);
 		unigram_model.put(new Token("grey", TokenType.WORD), 4);
 		unigram_model.put(new Token("red", TokenType.WORD), 2);
@@ -115,8 +91,12 @@ public class Generator {
 		unigram_model.put(new Token("cookies", TokenType.WORD), 1);
 		unigram_model.put(new Token("DeadMau5", TokenType.WORD), 1);
 		unigram_model.put(new Token("Muppets", TokenType.WORD), 1);
+		unigram_model.put(new Token(null, TokenType.START), 6);
+		unigram_model.put(new Token(".", TokenType.WORD), 6);
+		unigram_model.put(new Token(null, TokenType.END), 6);
 
 		HashMap<Bigram, Integer> bigram_model = new HashMap<>();
+		bigram_model.put(new Bigram(new Token(null, TokenType.START), new Token("The", TokenType.WORD)), 4);
 		bigram_model.put(new Bigram(new Token("The", TokenType.WORD), new Token("grey", TokenType.WORD)), 4);
 		bigram_model.put(new Bigram(new Token("The", TokenType.WORD), new Token("red", TokenType.WORD)), 2);
 		bigram_model.put(new Bigram(new Token("grey", TokenType.WORD), new Token("fox", TokenType.WORD)), 3);
@@ -127,15 +107,21 @@ public class Generator {
 		bigram_model.put(new Bigram(new Token("fox", TokenType.WORD), new Token("hates", TokenType.WORD)), 1);
 		bigram_model.put(new Bigram(new Token("deer", TokenType.WORD), new Token("likes", TokenType.WORD)), 1);
 		bigram_model.put(new Bigram(new Token("deer", TokenType.WORD), new Token("hates", TokenType.WORD)), 1);
-		bigram_model.put(new Bigram(new Token("likes", TokenType.WORD), new Token("cats", TokenType.WORD)), 4);
-		bigram_model.put(new Bigram(new Token("likes", TokenType.WORD), new Token("Pokemon", TokenType.WORD)), 4);
-		bigram_model.put(new Bigram(new Token("likes", TokenType.WORD), new Token("cookies", TokenType.WORD)), 4);
-		bigram_model.put(new Bigram(new Token("likes", TokenType.WORD), new Token("DeadMau5", TokenType.WORD)), 4);
-		bigram_model.put(new Bigram(new Token("hates", TokenType.WORD), new Token("dogs", TokenType.WORD)), 4);
-		bigram_model.put(new Bigram(new Token("hates", TokenType.WORD), new Token("Muppets", TokenType.WORD)), 4);
+		bigram_model.put(new Bigram(new Token("likes", TokenType.WORD), new Token("cats", TokenType.WORD)), 1);
+		bigram_model.put(new Bigram(new Token("likes", TokenType.WORD), new Token("Pokemon", TokenType.WORD)), 1);
+		bigram_model.put(new Bigram(new Token("likes", TokenType.WORD), new Token("cookies", TokenType.WORD)), 1);
+		bigram_model.put(new Bigram(new Token("likes", TokenType.WORD), new Token("DeadMau5", TokenType.WORD)), 1);
+		bigram_model.put(new Bigram(new Token("hates", TokenType.WORD), new Token("dogs", TokenType.WORD)), 1);
+		bigram_model.put(new Bigram(new Token("hates", TokenType.WORD), new Token("Muppets", TokenType.WORD)), 1);
+		bigram_model.put(new Bigram(new Token("cats", TokenType.WORD), new Token(".", TokenType.WORD)), 1);
+		bigram_model.put(new Bigram(new Token("Pokemon", TokenType.WORD), new Token(".", TokenType.WORD)), 1);
+		bigram_model.put(new Bigram(new Token("cookies", TokenType.WORD), new Token(".", TokenType.WORD)), 1);
+		bigram_model.put(new Bigram(new Token("DeadMau5", TokenType.WORD), new Token(".", TokenType.WORD)), 1);
+		bigram_model.put(new Bigram(new Token("dogs", TokenType.WORD), new Token(".", TokenType.WORD)), 1);
+		bigram_model.put(new Bigram(new Token("Muppets", TokenType.WORD), new Token(".", TokenType.WORD)), 1);
+		bigram_model.put(new Bigram(new Token(".", TokenType.WORD), new Token(null, TokenType.END)), 6);
 
-		
-		String sentence = Generator.randomBigramSentence(unigram_model, bigram_model, 5);
+		String sentence = Generator.randomBigramSentence(bigram_model);
 		System.out.println(sentence);
 	}
 }
