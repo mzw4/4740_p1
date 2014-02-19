@@ -1,8 +1,8 @@
 
 public class Bigram {
 
-	Token first;
-	Token second;
+	private Token first;
+	private Token second;
 	
 	public Bigram(Token f, Token s) {
 		first = f;
