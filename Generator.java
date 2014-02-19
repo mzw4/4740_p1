@@ -1,8 +1,53 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 
-
 public class Generator {
+	public static String randomUnigramSentence(HashMap<Token,Integer> unigrams) {
+        int total = getTotal(unigrams);
+        System.out.println(total);
+        String sentence = "";
+        boolean isEnd = false; //boolean indicating whether sentence is done
+
+        //count words of corpus
+        while (!isEnd) {
+        	int randomUni = (int) (Math.random() * total);
+        	
+            //find the next Unigram based on the random number generated
+        	for (Token k: unigrams.keySet()) {
+                int numUni = (int) unigrams.get(k);
+                randomUni -= numUni;
+                
+                if (randomUni < 0) {
+                	if (k.getType() == TokenType.END)
+                		isEnd = true;
+                	// capitalize first word of the sentence
+                	else if (sentence.equals("")) {
+                		String nextWord = k.getWord();
+                		nextWord = nextWord.substring(0,1).toUpperCase()
+                					+ nextWord.substring(1,nextWord.length());
+                		sentence = sentence + nextWord + " ";
+                	} else if (k.getType() == TokenType.START) {
+                		//don't do anything for START tokens
+                		continue;
+                	} else
+                		sentence = sentence + k.getWord() + " ";
+                	
+                	break;
+                }   
+        	}
+        }
+        
+        return sentence;
+    }
+    
+    public static int getTotal(HashMap<Token,Integer> htbl) {
+    	int total = 0;
+    	for (int i: htbl.values())
+    		total += i;
+    	
+    	return total;
+    }
+	
 	
 	/*
 	 * Generates a random sentence of specified length based on a bigram language model.
@@ -115,6 +160,7 @@ public class Generator {
 		unigram_model.put(new Token("cookies", TokenType.WORD), 1);
 		unigram_model.put(new Token("DeadMau5", TokenType.WORD), 1);
 		unigram_model.put(new Token("Muppets", TokenType.WORD), 1);
+		unigram_model.put(new Token(null, TokenType.END), 6);
 
 		HashMap<Bigram, Integer> bigram_model = new HashMap<>();
 		bigram_model.put(new Bigram(new Token("The", TokenType.WORD), new Token("grey", TokenType.WORD)), 4);
@@ -133,9 +179,10 @@ public class Generator {
 		bigram_model.put(new Bigram(new Token("likes", TokenType.WORD), new Token("DeadMau5", TokenType.WORD)), 4);
 		bigram_model.put(new Bigram(new Token("hates", TokenType.WORD), new Token("dogs", TokenType.WORD)), 4);
 		bigram_model.put(new Bigram(new Token("hates", TokenType.WORD), new Token("Muppets", TokenType.WORD)), 4);
-
 		
-		String sentence = Generator.randomBigramSentence(unigram_model, bigram_model, 5);
+		String sentence = Generator.randomUnigramSentence(unigram_model);
 		System.out.println(sentence);
+		//String sentence = Generator.randomBigramSentence(unigram_model, bigram_model, 5);
+		//System.out.println(sentence);
 	}
 }
