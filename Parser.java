@@ -1,10 +1,11 @@
 
 import java.util.Scanner;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.regex.*;
-import java.util.Enumeration;
 
 public class Parser {
 	
@@ -13,8 +14,8 @@ public class Parser {
 	}
 	
 	String filename;
-	Hashtable<Token, Integer> unigrams = new Hashtable<Token, Integer>();
-	Hashtable<Bigram, Integer> bigrams = new Hashtable<Bigram, Integer>();
+	static HashMap<Token, Integer> unigrams = new HashMap<Token, Integer>();
+	static HashMap<Bigram, Integer> bigrams = new HashMap<Bigram, Integer>();
 	
 
 	/**
@@ -58,6 +59,7 @@ public class Parser {
 		}
 		System.out.println("Corpus processed!");
 		
+		parser.unigramDump();
 		parser.bigramDump();
 		
 		System.out.println("To see a random sentence generated based on the unigrams of the given corpus, enter 'u'.");
@@ -67,11 +69,11 @@ public class Parser {
 			String input = inScanner.next();
 			
 			if (input.equals("u")) {
-				System.out.println(parser.randomUnigramSentence());
+				//System.out.println(Generator.randomUnigramSentence());
 			}
 			
 			else if(input.equals("b")) {
-				System.out.println(parser.randomBigramSentence());
+				System.out.println(Generator.randomBigramSentence(bigrams));
 			}
 			
 			else if(input.equals("x")) {
@@ -110,7 +112,39 @@ public class Parser {
 	}
 	
 	public void hotelProcess() {
-		//TODO: implement
+		File file = new File(filename);
+		Scanner hotelProcessor;
+		try {
+			hotelProcessor = new Scanner(file);
+		}
+		catch(FileNotFoundException e) {
+			System.out.println("That file was not found. Sorry :/");
+			return;
+		}
+		
+		//testing to see if the file is read
+		try {
+			String sCurrentLine;
+			BufferedReader br = new BufferedReader(new FileReader(file));
+			while ((sCurrentLine = br.readLine()) != null) {
+				//System.out.println(sCurrentLine);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		//Split into sentences by verse designations (of form [int]:[int])
+		hotelProcessor.useDelimiter(Pattern.compile("\n"));
+		while(hotelProcessor.hasNext()) {
+			String nextSentence = hotelProcessor.next();
+			
+			//Strip out all of the <> tags before processing.
+			processSentenceUnigrams(nextSentence.replaceAll("<.*>", ""));
+			processSentenceBigrams(nextSentence.replaceAll("<.*>", ""));
+		}
+		
+		hotelProcessor.close();
+		
 	}
 	
 	public void processSentenceUnigrams(String s) {
@@ -129,7 +163,7 @@ public class Parser {
 		//For a moment, presume that this has already been done.
 		//Split the string on whitespace.
 		String[] tokens = processed.split("\\s+");
-		//Increment the value for each token in the hashtable.
+		//Increment the value for each token in the HashMap.
 		for(int a = 0; a < tokens.length; a++) {
 			Token newToken = new Token(tokens[a], TokenType.WORD);
 			if (unigrams.get(newToken) == null) unigrams.put(newToken, 1);
@@ -178,34 +212,21 @@ public class Parser {
 		//Now we're done.
 	}
 	
-	public String randomUnigramSentence() {
-		//TODO: implement
-		return null;
-	}
-	
-	public String randomBigramSentence() {
-		//TODO: implement
-		return null;
-	}
-	
 	public void unigramDump() {
-		Enumeration<Token> keys = unigrams.keys();
 		System.out.println("Inside unigramDump");
-		System.out.println("Size of unigram hashtable is " + unigrams.size());
-		while(keys.hasMoreElements()) {
-			Token nextVal = keys.nextElement();
-			System.out.println(nextVal.printVal() + ", " + 
-		                       unigrams.get(nextVal));
+		System.out.println("Size of unigram HashMap is " + unigrams.size());
+		for(Token t: unigrams.keySet()) {
+//			System.out.println(t.printVal() + ", " + 
+//		                       unigrams.get(t));
 		}
 	}
 	
 	public void bigramDump() {
-		Enumeration<Bigram> keys = bigrams.keys();
 		System.out.println("Inside bigramDump");
-		System.out.println("Size of bigram hashtable is " + bigrams.size());
-		while(keys.hasMoreElements()) {
-			Bigram nextVal = keys.nextElement();
-			System.out.println(nextVal.printVal() + ", " + bigrams.get(nextVal));
+		System.out.println("Size of bigram HashMap is " + bigrams.size());
+		for(Bigram b: bigrams.keySet()) {
+//			System.out.println(b.printVal() + ", " + 
+//		                       unigrams.get(b));
 		}
 	}
 }
