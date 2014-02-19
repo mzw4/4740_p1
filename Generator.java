@@ -4,7 +4,6 @@ import java.util.HashMap;
 public class Generator {
 	public static String randomUnigramSentence(HashMap<Token,Integer> unigrams) {
         int total = getTotal(unigrams);
-        System.out.println(total);
         String sentence = "";
         boolean isEnd = false; //boolean indicating whether sentence is done
 
