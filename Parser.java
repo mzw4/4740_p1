@@ -1,10 +1,11 @@
 
 import java.util.Scanner;
 import java.util.HashMap;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.regex.*;
 
 public class Parser {
@@ -17,7 +18,6 @@ public class Parser {
 	static HashMap<Token, Integer> unigrams = new HashMap<Token, Integer>();
 	static HashMap<Bigram, Integer> bigrams = new HashMap<Bigram, Integer>();
 	
-
 	/**
 	 * @param args - The name of the file to be processed.
 	 * Identifies the type of corpus and then processes it. Allows the user to see
@@ -69,7 +69,7 @@ public class Parser {
 			String input = inScanner.next();
 			
 			if (input.equals("u")) {
-				//System.out.println(Generator.randomUnigramSentence());
+				System.out.println(Generator.randomUnigramSentence(unigrams));
 			}
 			
 			else if(input.equals("b")) {
@@ -122,14 +122,14 @@ public class Parser {
 			return;
 		}
 		
-		//testing to see if the file is read
 		try {
-			String sCurrentLine;
-			BufferedReader br = new BufferedReader(new FileReader(file));
-			while ((sCurrentLine = br.readLine()) != null) {
-				//System.out.println(sCurrentLine);
-			}
-		} catch (Exception e) {
+			String content = new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())));			
+			Pattern stopWords = Pattern.compile("[0-9],[0-9],");
+			Matcher matcher = stopWords.matcher(content);
+			String clean = matcher.replaceAll("");
+			
+			System.out.println(clean);
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		

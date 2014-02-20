@@ -2,6 +2,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Generator {
+	
+	/*
+	 * Generates a random sentence based on a unigram language model.
+	 */
 	public static String randomUnigramSentence(HashMap<Token,Integer> unigrams) {
         int total = getTotal(unigrams);
         String sentence = "";
@@ -19,15 +23,16 @@ public class Generator {
                 if (randomUni < 0) {
                 	if (k.getType() == TokenType.END)
                 		isEnd = true;
+                	else if (k.getType() == TokenType.START) {
+                		//don't do anything for START tokens
+                		continue;
+                	}
                 	// capitalize first word of the sentence
                 	else if (sentence.equals("")) {
                 		String nextWord = k.getWord();
                 		nextWord = nextWord.substring(0,1).toUpperCase()
                 					+ nextWord.substring(1,nextWord.length());
                 		sentence = sentence + nextWord + " ";
-                	} else if (k.getType() == TokenType.START) {
-                		//don't do anything for START tokens
-                		continue;
                 	} else
                 		sentence = sentence + k.getWord() + " ";
                 	
@@ -167,7 +172,7 @@ public class Generator {
 
 		String sentence = Generator.randomBigramSentence(bigram_model);
 		System.out.println(sentence);
-		//String sentence = Generator.randomBigramSentence(unigram_model, bigram_model, 5);
-		//System.out.println(sentence);
+		String sentence2 = Generator.randomUnigramSentence(unigram_model);
+		System.out.println(sentence2);
 	}
 }
