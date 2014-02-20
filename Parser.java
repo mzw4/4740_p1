@@ -1,10 +1,13 @@
 
 import java.util.Scanner;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.regex.*;
-import java.util.Enumeration;
+import java.util.Set;
+import java.util.Iterator;
+import java.text.BreakIterator;
+import java.util.Locale;
 
 public class Parser {
 	
@@ -13,8 +16,8 @@ public class Parser {
 	}
 	
 	String filename;
-	Hashtable<Token, Integer> unigrams = new Hashtable<Token, Integer>();
-	Hashtable<Bigram, Integer> bigrams = new Hashtable<Bigram, Integer>();
+	HashMap<Token, Integer> unigrams = new HashMap<Token, Integer>();
+	HashMap<Bigram, Integer> bigrams = new HashMap<Bigram, Integer>();
 	
 
 	/**
@@ -58,6 +61,7 @@ public class Parser {
 		}
 		System.out.println("Corpus processed!");
 		
+		parser.unigramDump();
 		parser.bigramDump();
 		
 		System.out.println("To see a random sentence generated based on the unigrams of the given corpus, enter 'u'.");
@@ -83,6 +87,8 @@ public class Parser {
 				System.out.println("Unrecognized input. Please try again.");
 			}
 		}
+		
+		inScanner.close();
 	}
 
 	public void bibleProcess() {
@@ -102,15 +108,43 @@ public class Parser {
 			String nextSentence = bibleProcessor.next();
 			
 			//Strip out all of the <> tags before processing.
-			processSentenceUnigrams(nextSentence.replaceAll("<.*>", ""));
-			processSentenceBigrams(nextSentence.replaceAll("<.*>", ""));
+			processChunk(nextSentence.replaceAll("<.*>", ""));
 		}
 		
 		bibleProcessor.close();
 	}
 	
 	public void hotelProcess() {
-		//TODO: implement
+		File file = new File(filename);
+		Scanner hotelProcessor;
+		try {
+			hotelProcessor = new Scanner(file);
+		}
+		catch(FileNotFoundException e) {
+			System.out.println("That file was not found. Sorry :/");
+			return;
+		}
+		
+		//Split into paragraphs by splitting on the (int,int,) designations at the front.
+		hotelProcessor.useDelimiter(Pattern.compile("[0-9],[0-9],"));
+		while(hotelProcessor.hasNext()) {
+			String nextReview = hotelProcessor.next();
+			
+			processChunk(nextReview);
+		}
+		
+		hotelProcessor.close();
+	}
+	
+	public void processChunk(String chunk) {
+		BreakIterator iterator = BreakIterator.getSentenceInstance(Locale.US);
+		iterator.setText(chunk);
+		int start = iterator.first();
+		for(int end = iterator.next(); end != BreakIterator.DONE; start = end, end = iterator.next()) {
+			String sentence = chunk.substring(start, end);
+			processSentenceUnigrams(sentence);
+			processSentenceBigrams(sentence);
+		}
 	}
 	
 	public void processSentenceUnigrams(String s) {
@@ -123,7 +157,6 @@ public class Parser {
 					     unigrams.get(new Token(null, TokenType.START)) + 1); 
 		}
 		
-		//TODO: Put spaces around punctuation, so that you can split on spaces.
 		String processed = s.replaceAll("([,!.?;:])", " \1 ");
 		
 		//For a moment, presume that this has already been done.
@@ -179,32 +212,32 @@ public class Parser {
 	}
 	
 	public String randomUnigramSentence() {
-		//TODO: implement
-		return null;
+		return Generator.randomUnigramSentence(unigrams);
 	}
 	
 	public String randomBigramSentence() {
-		//TODO: implement
-		return null;
+		return Generator.randomBigramSentence(bigrams);
 	}
 	
 	public void unigramDump() {
-		Enumeration<Token> keys = unigrams.keys();
+		Set<Token> keys = unigrams.keySet();
+		Iterator<Token> iterator = keys.iterator();
 		System.out.println("Inside unigramDump");
 		System.out.println("Size of unigram hashtable is " + unigrams.size());
-		while(keys.hasMoreElements()) {
-			Token nextVal = keys.nextElement();
+		while(iterator.hasNext()) {
+			Token nextVal = iterator.next();
 			System.out.println(nextVal.printVal() + ", " + 
 		                       unigrams.get(nextVal));
 		}
 	}
 	
 	public void bigramDump() {
-		Enumeration<Bigram> keys = bigrams.keys();
+		Set<Bigram> keys = bigrams.keySet();
+		Iterator<Bigram> iterator = keys.iterator();
 		System.out.println("Inside bigramDump");
 		System.out.println("Size of bigram hashtable is " + bigrams.size());
-		while(keys.hasMoreElements()) {
-			Bigram nextVal = keys.nextElement();
+		while(iterator.hasNext()) {
+			Bigram nextVal = iterator.next();
 			System.out.println(nextVal.printVal() + ", " + bigrams.get(nextVal));
 		}
 	}
