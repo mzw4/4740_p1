@@ -2,49 +2,54 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Generator {
+	
+	/*
+	 * Generates a random sentence based on a unigram language model.
+	 */
 	public static String randomUnigramSentence(HashMap<Token,Integer> unigrams) {
-        int total = getTotal(unigrams);
+        //int total = getTotal(unigrams);
         String sentence = "";
         boolean isEnd = false; //boolean indicating whether sentence is done
 
         //count words of corpus
         while (!isEnd) {
-        	int randomUni = (int) (Math.random() * total);
-        	
-            //find the next Unigram based on the random number generated
-        	for (Token k: unigrams.keySet()) {
-                int numUni = (int) unigrams.get(k);
-                randomUni -= numUni;
-                
-                if (randomUni < 0) {
-                	if (k.getType() == TokenType.END)
-                		isEnd = true;
-                	// capitalize first word of the sentence
-                	else if (sentence.equals("")) {
-                		String nextWord = k.getWord();
-                		nextWord = nextWord.substring(0,1).toUpperCase()
-                					+ nextWord.substring(1,nextWord.length());
-                		sentence = sentence + nextWord + " ";
-                	} else if (k.getType() == TokenType.START) {
-                		//don't do anything for START tokens
-                		continue;
-                	} else
-                		sentence = sentence + k.getWord() + " ";
-                	
-                	break;
-                }   
+        	Token next = selectUnigramWithProbability(unigrams);
+        	if(next == null || next.getType() == TokenType.END) {
+        		isEnd = true;
+        	} else if(next.getType() == TokenType.START) {
+        		continue;
+        	} else if(sentence.length() == 0 && next.getWord().length() != 0) { // capitalize first word of the sentence
+            	String word = next.getWord();
+        		word = word.substring(0,1).toUpperCase()
+    					+ word.substring(1,word.length());
+        		sentence += word + " ";
+        	} else {
+        		sentence += next.getWord() + " ";
         	}
         }
         
         return sentence;
     }
-    
-    public static int getTotal(HashMap<Token,Integer> htbl) {
-    	int total = 0;
-    	for (int i: htbl.values())
-    		total += i;
-    	
-    	return total;
+	
+	/* 
+	 * Selects a Token with probability according to its corresponding value 
+	 * with roulette style selection
+	 */
+    public static Token selectUnigramWithProbability(HashMap<Token,Integer> model) {
+		int sum = 0;
+		for(Integer count: model.values()) {
+			sum += count;
+		}
+		
+		int rand = (int) (Math.random() * sum);
+		int cur = 0;
+		for(Token t: model.keySet()) {
+			cur += model.get(t);
+			if(cur > rand) {
+				return t;
+			}
+		}
+		return null;
     }
 	
 	
@@ -167,7 +172,7 @@ public class Generator {
 
 		String sentence = Generator.randomBigramSentence(bigram_model);
 		System.out.println(sentence);
-		//String sentence = Generator.randomBigramSentence(unigram_model, bigram_model, 5);
-		//System.out.println(sentence);
+		String sentence2 = Generator.randomUnigramSentence(unigram_model);
+		System.out.println(sentence2);
 	}
 }
