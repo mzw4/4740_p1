@@ -9,6 +9,7 @@ import java.util.Iterator;
 
 public class Parser {
 	
+
 	private String filename;
 	private static final int GOOD_TURING_K = 5;
 	
@@ -120,6 +121,7 @@ public class Parser {
 		Bigram endBigram = new Bigram(prev, new Token(null, TokenType.END));
 		if (bigrams.get(endBigram) == null) bigrams.put(endBigram, 1);
 		else bigrams.put(endBigram, bigrams.get(endBigram) + 1);
+
 	}
 	
 	/*
