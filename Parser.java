@@ -15,8 +15,10 @@ public class Parser {
 	
 	private static HashMap<Token, Double> unigrams = new HashMap<Token, Double>();
 	private static HashMap<Bigram, Double> bigrams = new HashMap<Bigram, Double>();
+	private static HashMap<Trigram, Double> trigrams = new HashMap<Trigram, Double>();
 	private static HashMap<Token, Double> gtunigrams = new HashMap<Token, Double>();
 	private static HashMap<Bigram, Double> gtbigrams = new HashMap<Bigram, Double>();
+	private static HashMap<Trigram, Double> gttrigrams = new HashMap<Trigram, Double>();
 
 	/*
 	 * Create a parser instance for the given file
@@ -121,7 +123,31 @@ public class Parser {
 		Bigram endBigram = new Bigram(prev, new Token(null, TokenType.END));
 		if (bigrams.get(endBigram) == null) bigrams.put(endBigram, 1.0);
 		else bigrams.put(endBigram, bigrams.get(endBigram) + 1);
-
+	}
+	
+	public void processSentenceTrigrams(String s) {
+		//Process and tokenize
+		String processed = s.replaceAll("([(),!.?;:])", " $1 ");
+		String [] tokens = processed.split("\\s+");
+		
+		//Define start token
+		Token prev = new Token(null, TokenType.START);
+		
+		//Add each trigram to the map.
+		for(int a = 0; a < (tokens.length - 1); a++) {
+			Token newToken = new Token(tokens[a].trim(), TokenType.WORD);
+			Token successorToken = new Token(tokens[a+1].trim(), TokenType.WORD);
+			Trigram newTrigram = new Trigram(prev, newToken, successorToken);
+			if (trigrams.get(newTrigram) == null) trigrams.put(newTrigram, 1.0);
+			else trigrams.put(newTrigram, trigrams.get(newTrigram) + 1);
+			prev = newToken;
+		}
+		
+		//Handle the final trigram.
+		Trigram endTrigram = new Trigram(prev, new Token(tokens[tokens.length - 1].trim(), TokenType.WORD),
+				                         new Token(null, TokenType.END));
+		if (trigrams.get(endTrigram) == null) trigrams.put(endTrigram, 1.0);
+		else trigrams.put(endTrigram, trigrams.get(endTrigram) + 1.0);
 	}
 	
 	/*
@@ -146,12 +172,36 @@ public class Parser {
 		}
 	}
 	
+	public void trigramDump() {
+		System.out.println("Trigram info:");
+		for(Trigram t : trigrams.keySet()) {
+			System.out.println(t.printVal() + ", " + trigrams.get(t));
+		}
+		System.out.println("Size of trigram HashMap is " + trigrams.size());
+	}
+	
 	public HashMap<Token, Double> getUnigrams() {
 		return unigrams;
 	}
 	
+	public HashMap<Token, Double> getGTUnigrams() {
+		return gtunigrams;
+	}
+	
 	public HashMap<Bigram, Double> getBigrams() {
 		return bigrams;
+	}
+	
+	public HashMap<Bigram, Double> getGTBigrams() {
+		return gtbigrams;
+	}
+	
+	public HashMap<Trigram, Double> getTrigrams() {
+		return trigrams;
+	}
+	
+	public HashMap<Trigram, Double> getGTTrigrams() {
+		return gttrigrams;
 	}
 	
 	public void smoothUnigrams() {
@@ -243,6 +293,52 @@ public class Parser {
 			
 			if (unsmoothedCount <= GOOD_TURING_K) gtbigrams.put(nextVal, c_stars[(int) unsmoothedCount]);
 			else gtbigrams.put(nextVal, (double) unsmoothedCount);
+		}
+	}
+	
+	public void smoothTrigrams() {
+		Iterator<Double> iterator = trigrams.values().iterator();
+		int[] counts = new int[GOOD_TURING_K + 1];
+		
+		//initialize values in counts to 0
+		for(int a = 0; a <= GOOD_TURING_K; a++) {
+			counts[a] = 0;
+		}
+		
+		while(iterator.hasNext()) {
+			double val = iterator.next();
+			if (val >= 0 && val <= GOOD_TURING_K) {
+				counts[(int) val] = (counts[(int) val] + 1);
+			}
+		}
+		
+		//TODO: Simple Good-Turing - smooth N_c counts to replace zeroes
+		
+		double[] c_stars = new double[GOOD_TURING_K + 1];
+		//initalize c_stars[0] to be N_1
+		c_stars[0] = (double) counts[1];
+		
+		for(int a = 1; a <= GOOD_TURING_K; a++) {
+			//use the Katz 1987 formula (page 103 of the book) to calculate c_star given the value k
+			double c = (double) a;
+			
+			double katz_numerator = ((c+1) * ((double) counts[a+1])/((double) counts[a])) - 
+									(c * (((double) (GOOD_TURING_K + 1) * counts[a+1]) / counts[a]));
+			double katz_denominator = (double) (1 - (((double) (GOOD_TURING_K + 1) * counts[a+1]) / (double) counts[a]));
+			
+			c_stars[a] = katz_numerator / katz_denominator;
+		}
+		
+		//Now that we have the values for c_star, iterate over the unigrams and replace the values with the c_star values.
+		
+		Iterator<Trigram> token_iterator = trigrams.keySet().iterator();
+		
+		while(token_iterator.hasNext()) {
+			Trigram nextVal = token_iterator.next();
+			double unsmoothedCount = trigrams.get(nextVal);
+			
+			if (unsmoothedCount <= GOOD_TURING_K) gttrigrams.put(nextVal, c_stars[(int) unsmoothedCount]);
+			else gttrigrams.put(nextVal, (double) unsmoothedCount);
 		}
 	}
 }
