@@ -13,8 +13,8 @@ public class Parser {
 	private String filename;
 	private static final int GOOD_TURING_K = 5;
 	
-	private static HashMap<Token, Integer> unigrams = new HashMap<Token, Integer>();
-	private static HashMap<Bigram, Integer> bigrams = new HashMap<Bigram, Integer>();
+	private static HashMap<Token, Double> unigrams = new HashMap<Token, Double>();
+	private static HashMap<Bigram, Double> bigrams = new HashMap<Bigram, Double>();
 	private static HashMap<Token, Double> gtunigrams = new HashMap<Token, Double>();
 	private static HashMap<Bigram, Double> gtbigrams = new HashMap<Bigram, Double>();
 
@@ -77,7 +77,7 @@ public class Parser {
 	public void processSentenceUnigrams(String s) {
 		// Increment the number of start-of-sentence tokens.
 		Token startToken = new Token(null, TokenType.START);
-		if (unigrams.get(startToken) == null) unigrams.put(startToken, 1);
+		if (unigrams.get(startToken) == null) unigrams.put(startToken, 1.0);
 		else unigrams.put(startToken, unigrams.get(startToken) + 1); 
 		
 		// Process and tokenize
@@ -87,13 +87,13 @@ public class Parser {
 		// Increment the value for each token in the map.
 		for(int a = 0; a < tokens.length; a++) {
 			Token newToken = new Token(tokens[a].trim(), TokenType.WORD);
-			if (unigrams.get(newToken) == null) unigrams.put(newToken, 1);
+			if (unigrams.get(newToken) == null) unigrams.put(newToken, 1.0);
 			else unigrams.put(newToken, unigrams.get(newToken) + 1);
 		}
 		
 		// Increment the number of end-of-sentence tokens.
 		Token endToken = new Token(null, TokenType.END);
-		if (unigrams.get(endToken) == null) unigrams.put(endToken, 1);
+		if (unigrams.get(endToken) == null) unigrams.put(endToken, 1.0);
 		else unigrams.put(endToken, unigrams.get(endToken) + 1); 
 	}
 	
@@ -112,14 +112,14 @@ public class Parser {
 		for(int a = 0; a < tokens.length; a++) {
 			Token newToken = new Token(tokens[a].trim(), TokenType.WORD);
 			Bigram newBigram = new Bigram(prev, newToken);
-			if (bigrams.get(newBigram) == null) bigrams.put(newBigram, 1);
+			if (bigrams.get(newBigram) == null) bigrams.put(newBigram, 1.0);
 			else bigrams.put(newBigram, bigrams.get(newBigram) + 1);
 			prev = newToken;
 		}
 		
 		// Increment the number of end-of-sentence bigrams.
 		Bigram endBigram = new Bigram(prev, new Token(null, TokenType.END));
-		if (bigrams.get(endBigram) == null) bigrams.put(endBigram, 1);
+		if (bigrams.get(endBigram) == null) bigrams.put(endBigram, 1.0);
 		else bigrams.put(endBigram, bigrams.get(endBigram) + 1);
 
 	}
@@ -146,17 +146,17 @@ public class Parser {
 		}
 	}
 	
-	public HashMap<Token, Integer> getUnigrams() {
+	public HashMap<Token, Double> getUnigrams() {
 		return unigrams;
 	}
 	
-	public HashMap<Bigram, Integer> getBigrams() {
+	public HashMap<Bigram, Double> getBigrams() {
 		return bigrams;
 	}
 	
 	public void smoothUnigrams() {
-		Iterator<Integer> iterator = unigrams.values().iterator();
-		int[] counts = new int[GOOD_TURING_K + 1];
+		Iterator<Double> iterator = unigrams.values().iterator();
+		double[] counts = new double[GOOD_TURING_K + 1];
 		
 		//initialize values in counts to 0
 		for(int a = 0; a <= GOOD_TURING_K; a++) {
@@ -164,9 +164,9 @@ public class Parser {
 		}
 		
 		while(iterator.hasNext()) {
-			int val = iterator.next();
+			double val = iterator.next();
 			if (val >= 0 && val <= GOOD_TURING_K) {
-				counts[val]++;
+				counts[(int) val] = (counts[(int) val] + 1);
 			}
 		}
 		
@@ -193,15 +193,15 @@ public class Parser {
 		
 		while(token_iterator.hasNext()) {
 			Token nextVal = token_iterator.next();
-			int unsmoothedCount = unigrams.get(nextVal);
+			double unsmoothedCount = unigrams.get(nextVal);
 			
-			if (unsmoothedCount <= GOOD_TURING_K) gtunigrams.put(nextVal, c_stars[unsmoothedCount]);
+			if (unsmoothedCount <= GOOD_TURING_K) gtunigrams.put(nextVal, c_stars[(int) unsmoothedCount]);
 			else gtunigrams.put(nextVal, (double) unsmoothedCount);
 		}
 	}
 	
 	public void smoothBigrams() {
-		Iterator<Integer> iterator = bigrams.values().iterator();
+		Iterator<Double> iterator = bigrams.values().iterator();
 		int[] counts = new int[GOOD_TURING_K + 1];
 		
 		//initialize values in counts to 0
@@ -210,9 +210,9 @@ public class Parser {
 		}
 		
 		while(iterator.hasNext()) {
-			int val = iterator.next();
+			double val = iterator.next();
 			if (val >= 0 && val <= GOOD_TURING_K) {
-				counts[val]++;
+				counts[(int) val] = (counts[(int) val] + 1);
 			}
 		}
 		
@@ -239,9 +239,9 @@ public class Parser {
 		
 		while(token_iterator.hasNext()) {
 			Bigram nextVal = token_iterator.next();
-			int unsmoothedCount = bigrams.get(nextVal);
+			double unsmoothedCount = bigrams.get(nextVal);
 			
-			if (unsmoothedCount <= GOOD_TURING_K) gtbigrams.put(nextVal, c_stars[unsmoothedCount]);
+			if (unsmoothedCount <= GOOD_TURING_K) gtbigrams.put(nextVal, c_stars[(int) unsmoothedCount]);
 			else gtbigrams.put(nextVal, (double) unsmoothedCount);
 		}
 	}
