@@ -13,7 +13,7 @@ public class Parser {
 	
 
 	private String filename;
-	private static final int GOOD_TURING_K = 5;
+	private static final int GOOD_TURING_K = 6;
 	
 	private static HashMap<Token, Double> unigrams = new HashMap<Token, Double>();
 	private static HashMap<Bigram, Double> bigrams = new HashMap<Bigram, Double>();
@@ -29,11 +29,15 @@ public class Parser {
 		filename = name;
 	}
 	
+	public void setFile(String name) {
+		filename = name;
+	}
+	
 	/*
 	 * Preprocesses the specified type of corpora
 	 * "b" = bible, "h" = hotel
 	 */
-	public void processCorpus(String type) {
+	public void processCorpus(String type, boolean perplexity) {
 		File file = new File(filename);
 		String clean = "";
 		
@@ -45,7 +49,7 @@ public class Parser {
 				clean = content.replaceAll("[0-9]+:[0-9]+", "").replaceAll("<.*>", "");
 				break;
 			case "h":	// process hotel
-				clean = content.replaceAll("[0-9],[0-9],", "");
+				clean = content.replaceAll("[0-9?],[0-9?],", "");
 				break;
 			default:
 				clean = content;
@@ -56,7 +60,11 @@ public class Parser {
 			return;
 		}
 		
-		processChunk(clean.replaceAll("\n", ""));
+		if(perplexity) {
+			computePerplexity(clean.replaceAll("\n", ""));
+		} else {
+			processChunk(clean.replaceAll("\n", ""));
+		}
 	}
 	
 	/*
@@ -207,52 +215,71 @@ public class Parser {
 	}
 	
 	public void smoothUnigrams() {
-		Iterator<Double> iterator = unigrams.values().iterator();
-		double[] counts = new double[GOOD_TURING_K + 1];
+		unigrams.put(new Token(null, TokenType.UNK), 0.0);
 		
-		//initialize values in counts to 0
-		for(int a = 0; a <= GOOD_TURING_K; a++) {
-			counts[a] = 0;
-		}
-		
-		while(iterator.hasNext()) {
-			double val = iterator.next();
-			if (val >= 0 && val <= GOOD_TURING_K) {
-				counts[(int) val] = (counts[(int) val] + 1);
+		// Get counts for n-grams that appear c times
+		int[] counts = new int[GOOD_TURING_K + 1];
+		for(double d: unigrams.values()) {
+			if (d >= 0 && d <= GOOD_TURING_K) {
+				counts[(int) d]++;
 			}
 		}
 		
 		//TODO: Simple Good-Turing - smooth N_c counts to replace zeroes
+		double[] c_stars = new double[GOOD_TURING_K];
 		
-		double[] c_stars = new double[GOOD_TURING_K + 1];
-		//initalize c_stars[0] to be N_1
-		c_stars[0] = (double) counts[1];
-		
-		for(int a = 1; a <= GOOD_TURING_K; a++) {
-			//use the Katz 1987 formula (page 103 of the book) to calculate c_star given the value k
-			double c = (double) a;
-			
-			double katz_numerator = ((c+1) * ((double) counts[a+1])/((double) counts[a])) - 
-									(c * (((double) (GOOD_TURING_K + 1) * counts[a+1]) / counts[a]));
-			double katz_denominator = (double) (1 - (((double) (GOOD_TURING_K + 1) * counts[a+1]) / (double) counts[a]));
-			
-			c_stars[a] = katz_numerator / katz_denominator;
+		// Calculate new c_star values
+		for(int i = 0; i < GOOD_TURING_K; i++) {
+			c_stars[i] = (i+1) * ((double)counts[i+1]/counts[i]);
 		}
 		
-		//Now that we have the values for c_star, iterate over the unigrams and replace the values with the c_star values.
-		
-		Iterator<Token> token_iterator = unigrams.keySet().iterator();
-		
-		while(token_iterator.hasNext()) {
-			Token nextVal = token_iterator.next();
-			double unsmoothedCount = unigrams.get(nextVal);
-			
-			if (unsmoothedCount <= GOOD_TURING_K) gtunigrams.put(nextVal, c_stars[(int) unsmoothedCount]);
-			else gtunigrams.put(nextVal, (double) unsmoothedCount);
+		// Iterate over the bigrams and replace the values with the c_star values.
+		for(Token t: unigrams.keySet()) {
+			double unsmoothedCount = unigrams.get(t);
+			if (unsmoothedCount < GOOD_TURING_K) gtunigrams.put(t, c_stars[(int) unsmoothedCount]);
+			else gtunigrams.put(t, unsmoothedCount);
 		}
 	}
 	
 	public void smoothBigrams() {
+		// Account for unknown words
+		bigrams.put(new Bigram(new Token(null, TokenType.WORD), new Token(null, TokenType.UNK)), 0.0);
+		bigrams.put(new Bigram(new Token(null, TokenType.UNK), new Token(null, TokenType.UNK)), 0.0);
+		bigrams.put(new Bigram(new Token(null, TokenType.UNK), new Token(null, TokenType.WORD)), 0.0);
+
+		// Get counts for n-grams that appear c times
+		int[] counts = new int[GOOD_TURING_K + 1];
+		for(double d: bigrams.values()) {
+			if (d >= 0 && d <= GOOD_TURING_K) {
+				counts[(int) d]++;
+			}
+		}
+		
+		//TODO: Simple Good-Turing - smooth N_c counts to replace zeroes
+		double[] c_stars = new double[GOOD_TURING_K];
+		
+		// Calculate new c_star values
+		for(int i = 0; i < GOOD_TURING_K; i++) {
+			c_stars[i] = (i+1) * ((double)counts[i+1]/counts[i]);
+		}
+		
+		// Iterate over the bigrams and replace the values with the c_star values.
+		for(Bigram b: bigrams.keySet()) {
+			double unsmoothedCount = bigrams.get(b);
+			
+			if(b.getSecond().getWord() != null && b.getSecond().getWord().equals("IsTruthFul")) {
+				System.out.println("FUCK" + c_stars[(int) unsmoothedCount]);
+			}
+			if(b.getFirst().getWord() != null && b.getSecond().getWord() != null &&
+					b.getFirst().getWord().equals(",") && b.getSecond().getWord().equals("review")) {
+				System.out.println("added review");
+			}
+			if (unsmoothedCount < GOOD_TURING_K) gtbigrams.put(b, c_stars[(int) unsmoothedCount]);
+			else gtbigrams.put(b, unsmoothedCount);
+		}
+	}
+	
+	public void smoothBigrams2() {
 		Iterator<Double> iterator = bigrams.values().iterator();
 		int[] counts = new int[GOOD_TURING_K + 1];
 		
@@ -344,7 +371,11 @@ public class Parser {
 		}
 	}
 	
-	public static double computePerplexity(String chunk) {	
+	public void computePerplexity(String chunk) {	
+		// Smooth stuff
+		smoothUnigrams();
+		smoothBigrams();
+		
 		// Parse the test corpus into a list of tokens, including sentence boundaries
 		ArrayList<Token> tokens = new ArrayList<>();
 		
@@ -354,12 +385,21 @@ public class Parser {
 		for(int end = iterator.next(); end != BreakIterator.DONE; start = end, end = iterator.next()) {
 			tokens.add(new Token(null, TokenType.START));
 			
-			// Process and tokenize
+			// Process and tokenize each sentence
 			String sentence = chunk.substring(start, end).trim();
+			
+			System.out.println(sentence);
 			String processed = sentence.replaceAll("([(),!.?;:])", " $1 ");
 			String[] sentence_tokens = processed.split("\\s+");
 			for(String s: sentence_tokens) {
-				tokens.add(new Token(s, TokenType.WORD));
+				Token t = new Token(s, TokenType.WORD);
+				
+				// if the word is not in our unigram map, add it to the list as an unknown word
+				if(unigrams.containsKey(t)) {
+					tokens.add(t);
+				} else {
+					tokens.add(new Token(s, TokenType.UNK));
+				}
 			}
 			tokens.add(new Token(null, TokenType.END));
 		}
@@ -375,17 +415,45 @@ public class Parser {
 				for(Double u: gtunigrams.values()) {
 					uni_sum += u;
 				}
-				pp *= gtunigrams.get(t)/uni_sum;
+				// If word is unknown, use probability of unknown word
+				if(t.getType() == TokenType.UNK) {
+					pp *= gtunigrams.get(new Token(null, TokenType.UNK))/uni_sum;
+				} else {
+					pp *= gtunigrams.get(t)/uni_sum;
+				}
 			} else {
-				double count = gtbigrams.get(new Bigram(prev_word, t));
-				double prob = count/gtunigrams.get(prev_word);
+				System.out.println("-----------------");
+				System.out.println("Prevword: " + prev_word.getWord());
+				System.out.println("Word: " + t.getWord());
+				
+				double count = 0;
+				if(t.getType() == TokenType.UNK && prev_word.getType() == TokenType.UNK) {
+					count = gtbigrams.get(new Bigram(new Token(null, TokenType.UNK), new Token(null, TokenType.UNK)));
+				} else if(t.getType() == TokenType.UNK) {
+					count = gtbigrams.get(new Bigram(new Token(null, TokenType.WORD), new Token(null, TokenType.UNK)));
+				} else if(prev_word.getType() == TokenType.UNK) {
+					count = gtbigrams.get(new Bigram(new Token(null, TokenType.UNK), new Token(null, TokenType.WORD)));
+				} else {
+					count = gtbigrams.get(new Bigram(prev_word, t));
+				}
+				
+				double prob = 0;
+				if(prev_word.getType() == TokenType.UNK) {
+					prob = count/gtunigrams.get(new Token(null, TokenType.UNK));
+				} else {
+					prob = count/gtunigrams.get(prev_word);
+				}
+
+				System.out.println("Count: " +count);
+				//System.out.println("Prev prob:" + gtunigrams.get(prev_word));
+				System.out.println("Prob: " +prob);
 				pp *= 1/prob;
 			}
-			
+			System.out.println("PP: " +pp);
 			prev_word = t;
 			token_count++;
 		}
 		
-		return Math.pow(pp, 1/token_count);
+		System.out.println("Perplexity of test corpus " + filename + ": " + Math.pow(pp, 1/token_count));
 	}
 }

@@ -1,3 +1,3 @@
 public enum TokenType {
-	START, END, WORD
+	START, END, WORD, UNK
 }
