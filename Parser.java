@@ -281,7 +281,7 @@ public class Parser {
 	
 	public void smoothBigrams2() {
 		Iterator<Double> iterator = bigrams.values().iterator();
-		int[] counts = new int[GOOD_TURING_K + 1];
+		int[] counts = new int[GOOD_TURING_K + 2];
 		
 		//initialize values in counts to 0
 		for(int a = 0; a <= GOOD_TURING_K; a++) {
@@ -290,7 +290,7 @@ public class Parser {
 		
 		while(iterator.hasNext()) {
 			double val = iterator.next();
-			if (val >= 0 && val <= GOOD_TURING_K) {
+			if (val >= 0 && val <= GOOD_TURING_K + 1) {
 				counts[(int) val] = (counts[(int) val] + 1);
 			}
 		}
@@ -327,7 +327,7 @@ public class Parser {
 	
 	public void smoothTrigrams() {
 		Iterator<Double> iterator = trigrams.values().iterator();
-		int[] counts = new int[GOOD_TURING_K + 1];
+		int[] counts = new int[GOOD_TURING_K + 2];
 		
 		//initialize values in counts to 0
 		for(int a = 0; a <= GOOD_TURING_K; a++) {
@@ -336,7 +336,7 @@ public class Parser {
 		
 		while(iterator.hasNext()) {
 			double val = iterator.next();
-			if (val >= 0 && val <= GOOD_TURING_K) {
+			if (val >= 0 && val <= GOOD_TURING_K + 1) {
 				counts[(int) val] = (counts[(int) val] + 1);
 			}
 		}

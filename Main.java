@@ -27,6 +27,15 @@ public class Main {
 		System.out.println("Corpus processed!");
 		System.out.println("Size of unigram HashMap is " + parser.getUnigrams().size());
 		System.out.println("Size of bigram HashMap is " + parser.getBigrams().size());
+		
+		//Testing smoothing
+		parser.smoothUnigrams();
+		System.out.println("Smoothed unigrams.");
+		parser.smoothBigrams();
+		System.out.println("Smoothed bigrams.");
+		parser.smoothTrigrams();
+		System.out.println("Smoothed trigrams.");
+		
 
 		// Display parser dump
 		//parser.unigramDump();
