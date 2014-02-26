@@ -174,5 +174,7 @@ public class Generator {
 		System.out.println(sentence);
 		String sentence2 = Generator.randomUnigramSentence(unigram_model);
 		System.out.println(sentence2);
+		
+		
 	}
 }
