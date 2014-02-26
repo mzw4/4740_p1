@@ -455,9 +455,8 @@ public class Parser {
 				}
 
 				System.out.println("Count: " +count);
-				//System.out.println("Prev prob:" + gtunigrams.get(prev_word));
 				System.out.println("Prob: " +prob);
-				pp += Math.log10(1/prob);
+				pp += Math.log10(1/(prob));
 			}
 			System.out.println("PP: " +pp);
 			prev_word = t;
@@ -466,6 +465,6 @@ public class Parser {
 		
 		System.out.println(token_count);
 		System.out.println("Perplexity of test corpus " + filename + ": "
-		+ Math.pow(10, pp * -1/token_count));
+		+ Math.pow(10, pp/token_count));
 	}
 }
