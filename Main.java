@@ -13,7 +13,8 @@ public class Main {
 			return;
 		}
 		
-		Parser parser = new Parser(args[0]);
+		Parser parser = new Parser("./bible_corpus/kjbible.train");
+		//Parser parser = new Parser(args[0]);
 		Scanner inScanner = new Scanner(System.in);
 				
 		String corpus_type = "";
@@ -60,8 +61,9 @@ public class Main {
 				break;
 			case "p":
 				System.out.println("Please enter the path to the desired test corpus");
-				input = inScanner.next();
-				parser.setFile(input);
+				//input = inScanner.next();
+				//parser.setFile("./HotelReviews/reviews.test");
+				parser.setFile("./bible_corpus/kjbible.test");
 				parser.processCorpus(corpus_type, true);;
 				break;
 			case "x":
