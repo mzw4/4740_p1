@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.BreakIterator;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Iterator;
 
@@ -340,5 +342,50 @@ public class Parser {
 			if (unsmoothedCount <= GOOD_TURING_K) gttrigrams.put(nextVal, c_stars[(int) unsmoothedCount]);
 			else gttrigrams.put(nextVal, (double) unsmoothedCount);
 		}
+	}
+	
+	public static double computePerplexity(String chunk) {	
+		// Parse the test corpus into a list of tokens, including sentence boundaries
+		ArrayList<Token> tokens = new ArrayList<>();
+		
+		BreakIterator iterator = BreakIterator.getSentenceInstance(Locale.US);
+		iterator.setText(chunk);
+		int start = iterator.first();
+		for(int end = iterator.next(); end != BreakIterator.DONE; start = end, end = iterator.next()) {
+			tokens.add(new Token(null, TokenType.START));
+			
+			// Process and tokenize
+			String sentence = chunk.substring(start, end).trim();
+			String processed = sentence.replaceAll("([(),!.?;:])", " $1 ");
+			String[] sentence_tokens = processed.split("\\s+");
+			for(String s: sentence_tokens) {
+				tokens.add(new Token(s, TokenType.WORD));
+			}
+			tokens.add(new Token(null, TokenType.END));
+		}
+		
+		// Calculate perplexities
+		double pp = 1;
+		Token prev_word = null;
+		int token_count = 0;
+		
+		for(Token t: tokens) {
+			if(prev_word == null) {
+				int uni_sum = 0;
+				for(Double u: gtunigrams.values()) {
+					uni_sum += u;
+				}
+				pp *= gtunigrams.get(t)/uni_sum;
+			} else {
+				double count = gtbigrams.get(new Bigram(prev_word, t));
+				double prob = count/gtunigrams.get(prev_word);
+				pp *= 1/prob;
+			}
+			
+			prev_word = t;
+			token_count++;
+		}
+		
+		return Math.pow(pp, 1/token_count);
 	}
 }
