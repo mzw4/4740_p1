@@ -24,7 +24,7 @@ public class Main {
 		System.out.println("For any arbitrary text file that requires no preprocessing, enter any other character");
 		String input = inScanner.nextLine();
 		corpus_type = input;
-		parser.processCorpus(corpus_type, false);
+		parser.processCorpus(corpus_type, "");
 		System.out.println("Corpus processed!");
 		System.out.println("Size of unigram HashMap is " + parser.getUnigrams().size());
 		System.out.println("Size of bigram HashMap is " + parser.getBigrams().size());
@@ -37,7 +37,7 @@ public class Main {
 		parser.smoothTrigrams();
 		System.out.println("Smoothed trigrams.");
 		
-
+		
 		// Display parser dump
 		//parser.unigramDump();
 		//parser.bigramDump();
@@ -45,7 +45,7 @@ public class Main {
 		// Generate random sentences
 		System.out.println("To see a random sentence generated based on the unigrams of the given corpus, enter 'u'.");
 		System.out.println("To see a random sentence generated based on the bigrams of the given corpus, enter 'b'.");
-		System.out.println("To calculate perplexity on a test corpus, enter 'p'.");
+		System.out.println("To calculate unigram perplexity on a test corpus, enter 'pu'. For bigram perplexity, enter 'pb'.");
 		System.out.println("To exit, enter 'x'.");
 		
 		boolean running = true;
@@ -59,12 +59,19 @@ public class Main {
 			case "b":
 				System.out.println(Generator.randomBigramSentence(parser.getBigrams()));
 				break;
-			case "p":
+			case "pu":
 				System.out.println("Please enter the path to the desired test corpus");
 				//input = inScanner.next();
 				parser.setFile("./HotelReviews/reviews.test");
 				//parser.setFile("./bible_corpus/kjbible.test");
-				parser.processCorpus(corpus_type, true);;
+				parser.processCorpus(corpus_type, input);
+				break;
+			case "pb":
+				System.out.println("Please enter the path to the desired test corpus");
+				//input = inScanner.next();
+				parser.setFile("./HotelReviews/reviews.test");
+				//parser.setFile("./bible_corpus/kjbible.test");
+				parser.processCorpus(corpus_type, input);
 				break;
 			case "x":
 				System.out.println("Have a good day!");
