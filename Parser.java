@@ -16,12 +16,12 @@ public class Parser {
 	private String filename;
 	private static final int GOOD_TURING_K = 5;
 	
-	private static HashMap<Token, Double> unigrams = new HashMap<Token, Double>();
-	private static HashMap<Bigram, Double> bigrams = new HashMap<Bigram, Double>();
-	private static HashMap<Trigram, Double> trigrams = new HashMap<Trigram, Double>();
-	private static HashMap<Token, Double> gtunigrams = new HashMap<Token, Double>();
-	private static HashMap<Bigram, Double> gtbigrams = new HashMap<Bigram, Double>();
-	private static HashMap<Trigram, Double> gttrigrams = new HashMap<Trigram, Double>();
+	private HashMap<Token, Double> unigrams = new HashMap<Token, Double>();
+	private HashMap<Bigram, Double> bigrams = new HashMap<Bigram, Double>();
+	private HashMap<Trigram, Double> trigrams = new HashMap<Trigram, Double>();
+	private HashMap<Token, Double> gtunigrams = new HashMap<Token, Double>();
+	private HashMap<Bigram, Double> gtbigrams = new HashMap<Bigram, Double>();
+	private HashMap<Trigram, Double> gttrigrams = new HashMap<Trigram, Double>();
 
 	private double smoothed_unseen_bigram_count = 0;
 	
@@ -381,7 +381,7 @@ public class Parser {
 		}
 	}
 	
-	public void computeBigramPerplexity(String chunk) {	
+	public double computeBigramPerplexity(String chunk) {	
 		// Parse the test corpus into a list of tokens, including sentence boundaries
 		ArrayList<Token> tokens = tokenizeChunk(chunk); 
 		
@@ -404,9 +404,9 @@ public class Parser {
 					pp += Math.log10(gtunigrams.get(t)/uni_sum);
 				}
 			} else {
-				System.out.println("-----------------");
-				System.out.println("Prevword: " + prev_word.getWord());
-				System.out.println("Word: " + t.getWord());
+				//System.out.println("-----------------");
+				//System.out.println("Prevword: " + prev_word.getWord());
+				//System.out.println("Word: " + t.getWord());
 				
 				double count = 0;
 				if(t.getType() == TokenType.UNK && prev_word.getType() == TokenType.UNK) {
@@ -419,7 +419,7 @@ public class Parser {
 					if(gtbigrams.get(new Bigram(prev_word, t)) == null) {
 						count = smoothed_unseen_bigram_count;
 					} else {
-						System.out.println("Bigram count: " + gtbigrams.get(new Bigram(prev_word, t)));
+						//System.out.println("Bigram count: " + gtbigrams.get(new Bigram(prev_word, t)));
 						count = gtbigrams.get(new Bigram(prev_word, t));
 					}
 				}
@@ -432,23 +432,24 @@ public class Parser {
 				}
 
 				if(prob > 1) {
-					System.out.println("hi");
+					//System.out.println("hi");
 				}
-				System.out.println("Count: " +count);
-				System.out.println("Prob: " +prob);
+				//System.out.println("Count: " +count);
+				//System.out.println("Prob: " +prob);
 				pp += Math.log10(1/(prob));
 			}
-			System.out.println("PP: " +pp);
+			//System.out.println("PP: " +pp);
 			prev_word = t;
 			token_count++;
 		}
 		
-		System.out.println(token_count);
-		System.out.println("Perplexity of test corpus " + filename + ": "
-		+ Math.pow(10, pp/token_count));
+		//System.out.println(token_count);
+		//System.out.println("Perplexity of test corpus " + filename + ": "
+		//+ Math.pow(10, pp/token_count));
+		return Math.pow(10, pp/token_count);
 	}
 	
-	public void computeUnigramPerplexity(String chunk) {
+	public double computeUnigramPerplexity(String chunk) {
 		// Parse the test corpus into a list of tokens, including sentence boundaries
 		ArrayList<Token> tokens = tokenizeChunk(chunk); 
 		
@@ -484,6 +485,7 @@ public class Parser {
 		
 		System.out.println("-----------------");
 		System.out.println("Perplexity of test corpus " + filename + ": " + Math.pow(10, pp/token_count));
+		return Math.pow(10, pp/token_count);
 	}
 	
 	private ArrayList<Token> tokenizeChunk(String chunk) {
